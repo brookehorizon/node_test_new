@@ -92,7 +92,10 @@ export class EventsService {
      */
 
   async getEventsWithWorkshops() {
-    throw new Error('TODO task 1');
+    return await this.eventRepository
+    .createQueryBuilder('event')
+    .leftJoinAndSelect('event.workshops', 'workshops')
+    .getMany();
   }
 
   /* TODO: complete getFutureEventWithWorkshops so that it returns events with workshops, that have not yet started
@@ -162,6 +165,18 @@ export class EventsService {
     ```
      */
   async getFutureEventWithWorkshops() {
-    throw new Error('TODO task 2');
+    const subQuery = this.eventRepository
+    .createQueryBuilder('event')
+    .leftJoin('event.workshops', 'workshops')
+    .select('event.id, MIN(workshops.start)', 'min_start')
+    .groupBy('event.id');
+
+  return await this.eventRepository
+    .createQueryBuilder('event')
+    .leftJoinAndSelect('event.workshops', 'workshops')
+    .where(`event.id IN (${subQuery.getQuery()})`)
+    .andWhere('workshops.start >= :now', { now: new Date() })
+    .setParameters(subQuery.getParameters())
+    .getMany();
   }
 }
